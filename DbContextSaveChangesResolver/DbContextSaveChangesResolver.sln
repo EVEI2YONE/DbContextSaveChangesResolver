@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.5.33414.496
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbContextSaveChangesResolver", "DbContextSaveChangesResolver.csproj", "{AC6238A5-B6FD-4869-AE04-B16C79A967BE}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SaveChangesResolverTest", "..\SaveChangesResolverTest\SaveChangesResolverTest.csproj", "{3ECC52BE-304C-40E1-934F-1256146E8EDF}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{AC6238A5-B6FD-4869-AE04-B16C79A967BE}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{AC6238A5-B6FD-4869-AE04-B16C79A967BE}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{AC6238A5-B6FD-4869-AE04-B16C79A967BE}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{AC6238A5-B6FD-4869-AE04-B16C79A967BE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3ECC52BE-304C-40E1-934F-1256146E8EDF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3ECC52BE-304C-40E1-934F-1256146E8EDF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3ECC52BE-304C-40E1-934F-1256146E8EDF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3ECC52BE-304C-40E1-934F-1256146E8EDF}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {1252A19E-A0B1-4D88-B384-D143E3188EA7}
+	EndGlobalSection
+EndGlobal
