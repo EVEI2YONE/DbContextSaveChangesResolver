@@ -6,6 +6,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net.Mime;
+using System.Reflection;
 using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
@@ -17,11 +18,14 @@ namespace DbContextSaveChangesResolver.Services
         private Graph Graph;
         private DbContext context;
         private IEnumerable<IEntityType> contextTypes;
+        private Dictionary<Type, List<string>> _contextPrimaryKeys;
+        public Dictionary<Type, List<string>> ContextPrimaryKeys { get { return _contextPrimaryKeys;} }
 
         public InitializerService(Graph graph, DbContext context)
         {
             this.Graph = graph;
             this.context = context;
+            this._contextPrimaryKeys = new Dictionary<Type, List<string>>();
         }
 
         public void CreateTypeDependencyGraph()
@@ -30,6 +34,7 @@ namespace DbContextSaveChangesResolver.Services
             contextTypes = context.Model.GetEntityTypes();
             foreach (var type in contextTypes)
             {
+                _contextPrimaryKeys.Add(type.ClrType, new List<string>());
                 EntityMetadata metaData = new EntityMetadata() { Type = type.ClrType };
                 Graph.AddVertex(type.ClrType.Name, metaData);
             }
@@ -44,7 +49,9 @@ namespace DbContextSaveChangesResolver.Services
         {
             var entity = Activator.CreateInstance(type.ClrType);
             var entry = context.Entry(entity);
-            //IEnumerable<PropertyMetadata> PrimaryKeys = entry.Metadata.FindPrimaryKey()?.Properties.Select(x => new PropertyMetadata() { PropertyName = x.Name, DataType = x.ClrType }) ?? new List<PropertyMetadata>().AsEnumerable();
+            var primaryKeyProperties = entry.Metadata.FindPrimaryKey()?.Properties;
+            if(primaryKeyProperties != null && primaryKeyProperties.Any())
+                _contextPrimaryKeys[type.ClrType].AddRange(primaryKeyProperties.Select(x => x.Name));
             IEnumerable<PropertyMetadataReference> ForeignKeys = entry.Metadata.GetForeignKeys().Select(x =>
                 new PropertyMetadataReference()
                 {
