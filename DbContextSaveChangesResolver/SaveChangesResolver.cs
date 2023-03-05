@@ -21,7 +21,6 @@ namespace DbContextSaveChangesResolver
         private InitializerService initializerService;
         private DependencyResolver dependencyResolver;
         private BulkSaveService bulkSaveService;
-        public BulkSaveService BulkSaveService { get { return bulkSaveService; } }
 
         public SaveChangesResolver(DbContext context)
         {
@@ -41,6 +40,21 @@ namespace DbContextSaveChangesResolver
             initializerService.CreateTypeDependencyGraph();
             contextTypes = initializerService.GetContextTypes();
             dependencyResolver.ResolveDependencies();
+        }
+
+        public void DeferUpsert(object obj)
+        {
+            bulkSaveService.DeferUpsert(obj);
+        }
+
+        public void BulkUpsert()
+        {
+            bulkSaveService.BulkUpsert();
+        }
+
+        public string TotalItemsDeferred()
+        {
+            return bulkSaveService.ToString();
         }
 
         public string ToString(bool PrintVertexValues = true)

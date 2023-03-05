@@ -26,8 +26,13 @@ namespace SaveChangesResolverTest
             context = new EntityProjectContext(optionsBuilder.Options);
             context.Database.EnsureDeleted();
             context.Database.EnsureCreated();
-            hashSetCount = 0;
             resolver = new SaveChangesResolver(context);
+        }
+
+        [SetUp]
+        public void SetUp()
+        {
+            hashSetCount = 0;
         }
 
         [Test]
@@ -49,11 +54,11 @@ namespace SaveChangesResolverTest
         }
         
         [Test]
-        public void DeferSave()
+        public void DeferUpsert()
         {
-            resolver.BulkSaveService.DeferSave(new Table1() { Col1_PK = 1, Col2 = "1" });
-            resolver.BulkSaveService.DeferSave(new Table1() { Col1_PK = 1, Col2 = "2" });
-            Console.Write(resolver.BulkSaveService.ToString());
+            resolver.DeferUpsert(new Table1() { Col1_PK = 1, Col2 = "1" });
+            resolver.DeferUpsert(new Table1() { Col1_PK = 1, Col2 = "2" });
+            Console.Write(resolver.TotalItemsDeferred());
         }
 
         private void AddToHashSet(HashSet<object> hashset, object obj)
@@ -122,10 +127,10 @@ namespace SaveChangesResolverTest
         }
         
         [Test]
-        public void BulkSave()
+        public void BulkUpsert()
         {
-            DeferSave();
-            resolver.BulkSaveService.BulkSave();
+            DeferUpsert();
+            resolver.BulkUpsert();
 
         }
     }

@@ -27,7 +27,7 @@ namespace DbContextSaveChangesResolver.Services
                 this.DeferredData.TryAdd(key, new HashSet<object>(new PrimaryKeysComparer(PrimaryKeyProperties)));
         }
 
-        public void DeferSave<T>(T Entity) where T : class
+        public void DeferUpsert<T>(T Entity) where T : class
         {
             Type type = typeof(T);
             if (DeferredData.ContainsKey(type))
@@ -49,13 +49,13 @@ namespace DbContextSaveChangesResolver.Services
             DeferredData[entityType].Add(Entity);
         }
 
-        private T? FindEntity<T>(HashSet<T> List, HashSet<string> PrimaryKeys, T Entity) where T : class
+        private T? FindEntity<T>(HashSet<object> List, HashSet<string> PrimaryKeys, T Entity) where T : class
         {
             DeferredData[typeof(T)].TryGetValue(Entity, out object value);
             return (T?)value;
         }
 
-        public void BulkSave()
+        public void BulkUpsert()
         {
 
         }
