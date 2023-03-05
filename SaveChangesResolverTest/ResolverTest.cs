@@ -180,7 +180,8 @@ namespace SaveChangesResolverTest
 
         [TestCase(1000)]
         [TestCase(10000)]
-        [TestCase(50000)]
+        [TestCase(100000)]
+        [TestCase(230000)]
         public async Task BulkInsertAsync(int bulksize = 0)
         {
             if(bulksize > 0)
@@ -243,6 +244,38 @@ namespace SaveChangesResolverTest
         public async Task BulkUpdate(int bulksize)
         {
 
+        }
+
+
+        private void InsertTableDbContext<T>(int i, int j) where T : class
+        {
+            if (typeof(T) == typeof(Table1))
+                context.Table1.Add(new Table1() { Col1_PK = IntegrationTesting ? 0 : i, Col2 = i.ToString(), Col4 = "" });
+            if (typeof(T) == typeof(Table2))
+                context.Table2.Add(new Table2() { Col1_PK = IntegrationTesting ? 0 : j, Col2_FK = j, Col3_Value = "", Col4_Extra = "", Col5_Extra = i - j });
+        }
+
+        [TestCase(1000)]
+        [TestCase(10000)]
+        [TestCase(100000)]
+        [TestCase(230000)]
+        public async Task DbContext_SaveChanges(int totalInserts)
+        {
+            int start = (int)context.Table1.Min(x => x.Col1_PK);
+            int end = (int)context.Table1.Max(x => x.Col1_PK);
+            int j = (int)start + 1;
+            Console.WriteLine($"Entities tracked: {context.ChangeTracker.Entries().Count()}");
+            for (int i = 0; i < totalInserts; i++)
+            {
+                if (j == end)
+                    j = (int)start;
+                InsertTableDbContext<Table1>(i, j);
+                InsertTableDbContext<Table2>(i, j);
+                j++;
+            }
+            Console.WriteLine($"Entities tracked: {context.ChangeTracker.Entries().Count()}");
+            context.SaveChanges();
+            context.ChangeTracker.Clear();
         }
     }
 }

@@ -117,6 +117,7 @@ namespace DbContextSaveChangesResolver.Services
             var prevDeleteOrphansOption = Context.ChangeTracker.DeleteOrphansTiming;
             Context.ChangeTracker.CascadeDeleteTiming = CascadeTiming.OnSaveChanges;
             Context.ChangeTracker.DeleteOrphansTiming = CascadeTiming.OnSaveChanges;
+            ParallelOptions options = new ParallelOptions() { MaxDegreeOfParallelism = 5 };
             foreach (var type in ExecutionOrder)
             {
                 dynamic dbset;
@@ -129,6 +130,7 @@ namespace DbContextSaveChangesResolver.Services
                     GenericDbSets.TryAdd(type, dbset);
                 }
 
+                //i already know the type and dependency order, I can just use a custom sqldataread to upload the data based on properties in this loop
                 foreach (var dictionary in DeferredDataBuffer)
                 {
                     var dataset = dictionary[type];
@@ -136,9 +138,9 @@ namespace DbContextSaveChangesResolver.Services
                     {
                         Context.ChangeTracker.AutoDetectChangesEnabled = false;
                         if (dataset.Any())
-                            await AddRangeAsync(dbset, dataset);
+                            await AddRangeAsync(Context, dataset);
                     }
-                    catch(Exception ex)
+                    catch (Exception ex)
                     {
 
                     }
@@ -168,8 +170,8 @@ namespace DbContextSaveChangesResolver.Services
         private DbSet<T> FetchContextDbSet<T>(DbSet<T> _) where T : class
             => Context.Set<T>();
 
-        private async Task AddRangeAsync<T>(DbSet<T> _, HashSet<object> items) where T : class
-            => await Context.AddRangeAsync(items);
+        private async Task AddRangeAsync(dynamic context, HashSet<object> items)
+            => await context.AddRangeAsync(items);
 
         private void Detach<T>(InternalDbSet<T> _, object item) where T : class
             => Context.Set<T>().Entry((T)((object)item)).State = EntityState.Detached;
