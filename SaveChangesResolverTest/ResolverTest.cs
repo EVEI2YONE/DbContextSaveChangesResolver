@@ -36,6 +36,16 @@ namespace SaveChangesResolverTest
             }
         }
 
+        private void InsertTable<T>(int i, int j)
+        {
+            if(typeof(T) == typeof(Table1))
+                resolver.DeferUpsert(new Table1() { Col1_PK = IntegrationTesting ? 0 : i, Col2 = i.ToString(), Col4 = "" });
+            if(typeof(T) == typeof(Table2))
+                resolver.DeferUpsert(new Table2() { Col1_PK = IntegrationTesting ? 0 : j, Col2_FK = j, Col3_Value = "", Col4_Extra = "", Col5_Extra = i - j });
+            //if(typeof(T) == typeof(Table3))
+            //if(typeof(T) == typeof(Table4))
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -143,14 +153,15 @@ namespace SaveChangesResolverTest
         }
 
         [Test]
-        public void BulkDeferUpsert_Print()
+        public void BulkDeferUpsert_EntitiesTracked()
         {
+            Console.WriteLine($"Entities tracked: {context.ChangeTracker.Entries().Count()}");
             BulkDeferUpsert(19000);
-            Console.WriteLine(resolver.PrintTotalItemsDeferred(true));
+            Console.WriteLine($"Entities tracked: {context.ChangeTracker.Entries().Count()}");
         }
 
-        [TestCase(100000)]
-        public void BulkDeferUpsert(int totalInserts)
+        [TestCase(100000, true)]
+        public void BulkDeferUpsert(int totalInserts, bool testcase = false)
         {
             int start = (int)context.Table1.Min(x => x.Col1_PK);
             int end = (int)context.Table1.Max(x => x.Col1_PK);
@@ -159,27 +170,79 @@ namespace SaveChangesResolverTest
             {
                 if (j == end)
                     j = (int)start;
-                resolver.DeferUpsert(new Table1() { Col1_PK = IntegrationTesting ? 0 : i, Col2 = i.ToString(), Col4 = "" });
-                resolver.DeferUpsert(new Table2() { Col1_PK = IntegrationTesting ? 0 : j, Col2_FK = j, Col3_Value = "", Col4_Extra = "", Col5_Extra = i-j });
+                InsertTable<Table1>(i, j);
+                InsertTable<Table2>(i, j);
                 j++;
             }
-            Console.WriteLine(resolver.PrintTotalItemsDeferred(false));
 
-            Console.WriteLine("Table1 items deferred: " + resolver.GetTotalItemsDeferredByType(typeof(Table1)));
-            Console.WriteLine("Table2 items deferred: " + resolver.GetTotalItemsDeferredByType(typeof(Table2)));
-            Console.WriteLine();
+            Console.WriteLine(resolver.PrintTotalItemsDeferred(false));
         }
 
         [TestCase(1000)]
-        public async Task BulkUpsert(int bulksize)
+        [TestCase(10000)]
+        [TestCase(50000)]
+        public async Task BulkInsertAsync(int bulksize = 0)
         {
-            Console.WriteLine("BEFORE");
-            BulkDeferUpsert(bulksize);
+            if(bulksize > 0)
+            {
+                Console.WriteLine("Deferring bulk insert");
+                BulkDeferUpsert(bulksize);
+            }
+            else
+            {
+                Console.WriteLine("Before bulk insert");
+                BulkDeferUpsert(0);
+            }
             
             await resolver.BulkUpsertAsync();
 
-            Console.WriteLine("AFTER");
+            Console.WriteLine("After bulk insert");
             BulkDeferUpsert(0);
+        }
+
+        [Test]
+        public async Task BulkInsert_EntitiesTracked()
+        {
+            var entries = context.ChangeTracker.Entries().Count();
+            Assert.AreEqual(0, entries);
+            Console.WriteLine($"Entities tracked: {entries}");
+            
+            BulkDeferUpsert(19000);
+
+            Stopwatch sw = Stopwatch.StartNew();
+            await BulkInsertAsync(0);
+            sw.Stop();
+
+            Console.WriteLine($"Bulk insertion operation time ms: {sw.ElapsedMilliseconds}");
+
+            entries = context.ChangeTracker.Entries().Count();
+            Console.WriteLine($"Entities tracked: {entries}");
+            Assert.AreEqual(0, entries);
+        }
+
+        [TestCase(5004, 1)]
+        [TestCase(5004, 5)]
+        public async Task BulkInsert_Successive(int bulksize, int iterations)
+        {
+            Console.WriteLine();
+            for(int i = 0; i < iterations; i++)
+            {
+                Console.WriteLine($"Iteration: {i+1}/{iterations}");
+                BulkDeferUpsert(bulksize);
+                Console.WriteLine($"START Print bulk set");
+                Console.WriteLine(resolver.PrintTotalItemsDeferred(true));
+                Console.WriteLine($"END Print bulk set");
+                Console.WriteLine($"Deferring additional batch of {bulksize} items");
+                await BulkInsertAsync(bulksize);
+            }
+            Console.WriteLine($"START Print bulk set");
+            Console.WriteLine(resolver.PrintTotalItemsDeferred(true));
+            Console.WriteLine($"END Print bulk set");
+        }
+
+        public async Task BulkUpdate(int bulksize)
+        {
+
         }
     }
 }

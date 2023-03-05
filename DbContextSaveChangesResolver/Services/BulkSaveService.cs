@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore.Internal;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
+using Microsoft.EntityFrameworkCore.Query;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -56,8 +57,11 @@ namespace DbContextSaveChangesResolver.Services
         public void DeferUpsert<T>(T Entity) where T : class
         {
             Type type = typeof(T);
-            if (DeferredData.Any(x => x.ContainsKey(type)))
-                Upsert(Entity);
+            lock (BufferSwapLock)
+            {
+                if (DeferredData.Any(x => x.ContainsKey(type)))
+                    Upsert(Entity);
+            }
         }
 
         private void Upsert<T>(T Entity) where T : class
@@ -109,6 +113,10 @@ namespace DbContextSaveChangesResolver.Services
                     DeferredDataBuffer = temp;
                 }
             }
+            var prevCascadeDeleteOption = Context.ChangeTracker.CascadeDeleteTiming;
+            var prevDeleteOrphansOption = Context.ChangeTracker.DeleteOrphansTiming;
+            Context.ChangeTracker.CascadeDeleteTiming = CascadeTiming.OnSaveChanges;
+            Context.ChangeTracker.DeleteOrphansTiming = CascadeTiming.OnSaveChanges;
             foreach (var type in ExecutionOrder)
             {
                 dynamic dbset;
@@ -121,15 +129,14 @@ namespace DbContextSaveChangesResolver.Services
                     GenericDbSets.TryAdd(type, dbset);
                 }
 
-                foreach (var dataset in DeferredDataBuffer)
+                foreach (var dictionary in DeferredDataBuffer)
                 {
+                    var dataset = dictionary[type];
                     try
                     {
                         Context.ChangeTracker.AutoDetectChangesEnabled = false;
-                        var before = Context.ChangeTracker.Entries().Count();
-                        if (dataset[type].Any())
-                            await AddRangeAsync(dbset, dataset[type]);
-                        var after = Context.ChangeTracker.Entries().Count();
+                        if (dataset.Any())
+                            await AddRangeAsync(dbset, dataset);
                     }
                     catch(Exception ex)
                     {
@@ -139,24 +146,23 @@ namespace DbContextSaveChangesResolver.Services
                     {
                         Context.ChangeTracker.AutoDetectChangesEnabled = true;
                     }
-                    try
+                    if (dataset.Any())
                     {
-                        if (dataset[type].Any())
-                            await Context.SaveChangesAsync();
+                        await Context.SaveChangesAsync();
+                        foreach (var item in dataset)
+                            Detach(dbset, Convert.ChangeType(item, type));
                     }
-                    catch(Exception ex)
-                    {
-
-                    }
-
-                    //Detach(dataset[type], dbset);
                 }
             }
+            Context.ChangeTracker.CascadeDeleteTiming = prevCascadeDeleteOption;
+            Context.ChangeTracker.DeleteOrphansTiming = prevDeleteOrphansOption;
             DeferredDataBuffer.ForEach(dataset =>
             {
                 foreach (var key in dataset.Keys)
                     dataset[key].Clear();
             });
+            if (DeferredDataBuffer.Count > 1)
+                DeferredDataBuffer.RemoveRange(1, DeferredDataBuffer.Count - 1);
         }
 
         private DbSet<T> FetchContextDbSet<T>(DbSet<T> _) where T : class
@@ -165,37 +171,27 @@ namespace DbContextSaveChangesResolver.Services
         private async Task AddRangeAsync<T>(DbSet<T> _, HashSet<object> items) where T : class
             => await Context.AddRangeAsync(items);
 
-        private void Detach(HashSet<object> dataset, dynamic dbset)
-        {
-            var prevCascadeDeleteOption = Context.ChangeTracker.CascadeDeleteTiming;
-            var prevDeleteOrphansOption = Context.ChangeTracker.DeleteOrphansTiming;
-
-            Context.ChangeTracker.CascadeDeleteTiming = CascadeTiming.OnSaveChanges;
-            Context.ChangeTracker.DeleteOrphansTiming = CascadeTiming.OnSaveChanges;
-            foreach (var item in dataset)
-                dbset.Entry(item).State = EntityState.Detached;
-
-            Context.ChangeTracker.CascadeDeleteTiming = prevCascadeDeleteOption;
-            Context.ChangeTracker.DeleteOrphansTiming = prevDeleteOrphansOption;
-        }
+        private void Detach<T>(InternalDbSet<T> _, object item) where T : class
+            => Context.Set<T>().Entry((T)((object)item)).State = EntityState.Detached;
 
         public int GetTotalItemsDeferredByType(Type type)
-            => DeferredData.Sum(x => GetTotalItemsDeferredByType(type, x));
+        {
+            lock(BufferSwapLock)
+                return DeferredData.Sum(x => GetTotalItemsDeferredByType(type, x));
+        }
         public int GetTotalItemsDeferredByType(Type type, IDictionary<Type, HashSet<object>> dataset)
-            => dataset.Where(y => y.Key == type).Sum(y => y.Value.Count);
+        => dataset.Where(y => y.Key == type).Sum(y => y.Value.Count);
 
         public string PrintTotalItemsDeferred(bool PrintBulkSets = false)
         {
             StringBuilder stringBuilder = new StringBuilder();
-
             long itemsToSave = DeferredData.Sum(x => x.Sum(y => y.Value.Count));
             stringBuilder.AppendLine($"Total deferred items to save: {itemsToSave}");
-            var test = DeferredData.First();
             if (PrintBulkSets)
             {
-                foreach(var dataset in DeferredData)
+                foreach (var dataset in DeferredData)
                 {
-                    foreach(var type in ExecutionOrder)
+                    foreach (var type in ExecutionOrder)
                         stringBuilder.AppendLine($"\t{type.Name}: {GetTotalItemsDeferredByType(type, dataset)}");
                     stringBuilder.AppendLine();
                 }
