@@ -24,7 +24,7 @@ namespace DbContextSaveChangesResolver.Services
             this._graph = new Graph();
             this.graphDependencyBuilderService = new GraphDependencyBuilderService(Graph, context);
             this.dependencyResolver = new DependencyResolver(Graph);
-            this.bulkSaveService = new BulkSaveService(dependencyResolver.ExecutionOrder, graphDependencyBuilderService.ContextPrimaryKeys);
+            this.bulkSaveService = new BulkSaveService(dependencyResolver.ExecutionOrder, graphDependencyBuilderService.ContextPrimaryKeys, context);
         }
 
         public BulkSaveService GetBulkSaveService()

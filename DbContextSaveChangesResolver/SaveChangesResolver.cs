@@ -26,31 +26,25 @@ namespace DbContextSaveChangesResolver
             
         }
 
-        public void DeferUpsert(object obj)
-        {
-            bulkSaveService.DeferUpsert(obj);
-        }
+        public Graph GetGraph()
+            => initializerService.Graph;
 
-        public void BulkUpsert()
-        {
-            bulkSaveService.BulkUpsert();
-        }
+        public void DeferUpsert<T>(T obj) where T : class
+            => bulkSaveService.DeferUpsert(obj);
 
-        public string PrintTotalItemsDeferred()
-        {
-            return bulkSaveService.PrintTotalItemsDeferred();
-        }
+        public Task BulkUpsert()
+            => bulkSaveService.BulkUpsert();
+
+        public string PrintTotalItemsDeferred(bool PrintBulkSets = false)
+            => bulkSaveService.PrintTotalItemsDeferred(PrintBulkSets);
+
+        public int GetTotalItemsDeferredByType(Type type)
+            => bulkSaveService.GetTotalItemsDeferredByType(type);
 
         public string PrintDependencyGraph(bool PrintVertexValues = true)
-        {
-            return initializerService.PrintDependencyGraph(PrintVertexValues);
-        }
+            => initializerService.PrintDependencyGraph(PrintVertexValues);
 
         public string PrintDependencyOrder()
-        {
-            return initializerService.PrintDependencyOrder();
-        }
-
-
+            => initializerService.PrintDependencyOrder();
     }
 }
