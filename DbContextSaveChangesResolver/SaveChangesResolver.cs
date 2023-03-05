@@ -19,6 +19,9 @@ namespace DbContextSaveChangesResolver
         private DbContext context;
         private IEnumerable<IEntityType> contextTypes;
         private InitializerService initializerService;
+        private DependencyResolver dependencyResolver;
+        private BulkSaveService bulkSaveService;
+        public BulkSaveService BulkSaveService { get { return bulkSaveService; } }
 
         public SaveChangesResolver(DbContext context)
         {
@@ -26,18 +29,19 @@ namespace DbContextSaveChangesResolver
             this.contextTypes = new List<IEntityType>();
             this._graph = new Graph();
             this.initializerService = new InitializerService(Graph, context);
+            this.dependencyResolver = new DependencyResolver(Graph);
+            CreateTypeDependencyGraph();
+            this.bulkSaveService = new BulkSaveService(dependencyResolver, initializerService.ContextPrimaryKeys);
         }
 
-        public void CreateTypeDependencyGraph()
+        private void CreateTypeDependencyGraph()
         {
             if (context == null)
                 return;
             initializerService.CreateTypeDependencyGraph();
             contextTypes = initializerService.GetContextTypes();
+            dependencyResolver.ResolveDependencies();
         }
-
-
-
 
         public string ToString(bool PrintVertexValues = true)
         {
@@ -49,6 +53,11 @@ namespace DbContextSaveChangesResolver
                 stringBuilder.AppendLine(((EntityMetadata)Vertex.Value).ToString()); 
             }
             return stringBuilder.ToString();
+        }
+
+        public string PrintDependencyOrder()
+        {
+            return dependencyResolver.ToString();
         }
     }
 }
