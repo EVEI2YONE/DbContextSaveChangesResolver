@@ -32,8 +32,8 @@ namespace DbContextSaveChangesResolver
         public void DeferUpsert<T>(T obj) where T : class
             => bulkSaveService.DeferUpsert(obj);
 
-        public Task BulkUpsert()
-            => bulkSaveService.BulkUpsert();
+        public async Task BulkUpsertAsync()
+            => await bulkSaveService.BulkUpsertAsync();
 
         public string PrintTotalItemsDeferred(bool PrintBulkSets = false)
             => bulkSaveService.PrintTotalItemsDeferred(PrintBulkSets);

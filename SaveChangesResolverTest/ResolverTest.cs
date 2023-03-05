@@ -152,13 +152,15 @@ namespace SaveChangesResolverTest
         [TestCase(100000)]
         public void BulkDeferUpsert(int totalInserts)
         {
-            int j = 0;
+            int start = (int)context.Table1.Min(x => x.Col1_PK);
+            int end = (int)context.Table1.Max(x => x.Col1_PK);
+            int j = (int)start+1;
             for (int i = 0; i < totalInserts; i++)
             {
-                if (j == 25)
-                    j = 0;
-                resolver.DeferUpsert(new Table1() { Col1_PK = i, Col2 = i.ToString(), Col4 = "" });
-                resolver.DeferUpsert(new Table2() { Col1_PK = j, Col2_FK = j, Col3_Value = "", Col4_Extra = "", Col5_Extra = i-j });
+                if (j == end)
+                    j = (int)start;
+                resolver.DeferUpsert(new Table1() { Col1_PK = IntegrationTesting ? 0 : i, Col2 = i.ToString(), Col4 = "" });
+                resolver.DeferUpsert(new Table2() { Col1_PK = IntegrationTesting ? 0 : j, Col2_FK = j, Col3_Value = "", Col4_Extra = "", Col5_Extra = i-j });
                 j++;
             }
             Console.WriteLine(resolver.PrintTotalItemsDeferred(false));
@@ -169,12 +171,12 @@ namespace SaveChangesResolverTest
         }
 
         [TestCase(1000)]
-        public void BulkUpsert(int bulksize)
+        public async Task BulkUpsert(int bulksize)
         {
             Console.WriteLine("BEFORE");
             BulkDeferUpsert(bulksize);
             
-            resolver.BulkUpsert();
+            await resolver.BulkUpsertAsync();
 
             Console.WriteLine("AFTER");
             BulkDeferUpsert(0);

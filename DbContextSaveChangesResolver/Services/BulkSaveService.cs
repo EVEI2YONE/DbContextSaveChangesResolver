@@ -98,7 +98,7 @@ namespace DbContextSaveChangesResolver.Services
         }
 
         private int bulkThreshold = 10000;
-        public async Task BulkUpsert()
+        public async Task BulkUpsertAsync()
         {
             lock (BulkOperations)
             {
@@ -127,11 +127,9 @@ namespace DbContextSaveChangesResolver.Services
                     {
                         Context.ChangeTracker.AutoDetectChangesEnabled = false;
                         var before = Context.ChangeTracker.Entries().Count();
-                        Console.WriteLine($"Tracked changes: {before}");
                         if (dataset[type].Any())
-                            await Context.AddRangeAsync(dataset[type]);
+                            await AddRangeAsync(dbset, dataset[type]);
                         var after = Context.ChangeTracker.Entries().Count();
-                        Console.WriteLine($"Tracked changes: {after}");
                     }
                     catch(Exception ex)
                     {
@@ -151,7 +149,7 @@ namespace DbContextSaveChangesResolver.Services
 
                     }
 
-                    Detach(dataset[type], dbset);
+                    //Detach(dataset[type], dbset);
                 }
             }
             DeferredDataBuffer.ForEach(dataset =>
@@ -163,6 +161,9 @@ namespace DbContextSaveChangesResolver.Services
 
         private DbSet<T> FetchContextDbSet<T>(DbSet<T> _) where T : class
             => Context.Set<T>();
+
+        private async Task AddRangeAsync<T>(DbSet<T> _, HashSet<object> items) where T : class
+            => await Context.AddRangeAsync(items);
 
         private void Detach(HashSet<object> dataset, dynamic dbset)
         {

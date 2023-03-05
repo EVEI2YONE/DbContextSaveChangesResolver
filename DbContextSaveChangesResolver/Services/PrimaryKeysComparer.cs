@@ -26,7 +26,7 @@ namespace DbContextSaveChangesResolver.Services
 
         public int GetHashCode([DisallowNull] object obj)
         {
-            int hash = 43;
+            int hash = 17;
             if (PrimaryKeyProperties.ContainsKey(obj.GetType()))
                 hash = CalculateHash(obj.GetType(), hash, obj);
             else
@@ -37,7 +37,13 @@ namespace DbContextSaveChangesResolver.Services
         private int CalculateHash(Type type, int hash, object obj)
         {
             foreach (var property in PrimaryKeyProperties[type])
-                hash = hash * 71 + property.GetValue(obj).GetHashCode();
+            {
+                var val = property.GetValue(obj);
+                if (int.TryParse(val.ToString(), out int PK_Default) && PK_Default == 0)
+                    return obj.GetHashCode();
+                else
+                    hash = hash * 23 + val.GetHashCode();
+            }
             return hash;
         }
     }
