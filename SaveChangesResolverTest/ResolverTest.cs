@@ -38,13 +38,13 @@ namespace SaveChangesResolverTest
         [Test]
         public void PrintTest1()
         {
-            Console.Write(resolver.ToString(false));
+            Console.Write(resolver.PrintDependencyGraph(false));
         }
         
         [Test]
         public void PrintTest2()
         {
-            Console.Write(resolver.ToString());
+            Console.Write(resolver.PrintDependencyGraph(true));
         }
 
         [Test]
@@ -58,7 +58,7 @@ namespace SaveChangesResolverTest
         {
             resolver.DeferUpsert(new Table1() { Col1_PK = 1, Col2 = "1" });
             resolver.DeferUpsert(new Table1() { Col1_PK = 1, Col2 = "2" });
-            Console.Write(resolver.TotalItemsDeferred());
+            Console.Write(resolver.PrintTotalItemsDeferred());
         }
 
         private void AddToHashSet(HashSet<object> hashset, object obj)

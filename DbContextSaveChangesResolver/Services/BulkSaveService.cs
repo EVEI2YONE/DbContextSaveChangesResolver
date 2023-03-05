@@ -13,15 +13,15 @@ namespace DbContextSaveChangesResolver.Services
 {
     public class BulkSaveService
     {
-        private DependencyResolver DependencyResolver;
+        private IEnumerable<Type> DependencyResolver;
         private IDictionary<Type, HashSet<object>> DeferredData;
         private IDictionary<Type, HashSet<string>> PrimaryKeys;
         private IDictionary<Type, List<PropertyInfo>> PrimaryKeyProperties;
-        public BulkSaveService(DependencyResolver Resolver, IDictionary<Type, List<string>> PKs)
+        public BulkSaveService(IEnumerable<string> ExecutionOrder, IDictionary<Type, List<string>> PKs)
         {
             this.PrimaryKeys = PKs.ToDictionary(x => x.Key, x => new HashSet<string>(PKs[x.Key]));
             PrimaryKeyProperties = PrimaryKeys.ToDictionary(x => x.Key, x => x.Key.GetProperties().Where(pkProp => PrimaryKeys[x.Key].Any(y => y.Equals(pkProp.Name))).ToList());
-            this.DependencyResolver = Resolver;
+            this.DependencyResolver = PKs.Keys.Where(x => ExecutionOrder.Contains(x.Name));
             this.DeferredData = new Dictionary<Type, HashSet<object>>();
             foreach (var key in PKs.Keys)
                 this.DeferredData.TryAdd(key, new HashSet<object>(new PrimaryKeysComparer(PrimaryKeyProperties)));
@@ -57,10 +57,10 @@ namespace DbContextSaveChangesResolver.Services
 
         public void BulkUpsert()
         {
-
+            
         }
 
-        public override string ToString()
+        public string PrintTotalItemsDeferred()
         {
             StringBuilder stringBuilder = new StringBuilder();
 
