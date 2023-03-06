@@ -23,7 +23,6 @@ namespace DbContextSaveChangesResolver
             this.context = context;
             this.initializerService = new InitializerService(context);
             this.bulkSaveService = initializerService.GetBulkSaveService();
-            
         }
 
         public Graph GetGraph()

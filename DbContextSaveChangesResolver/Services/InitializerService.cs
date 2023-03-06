@@ -14,17 +14,17 @@ namespace DbContextSaveChangesResolver.Services
     {
         private Graph _graph;
         public Graph Graph { get { return _graph; } }
-        private GraphDependencyBuilderService graphDependencyBuilderService;
-        private DependencyResolver dependencyResolver;
+        //private GraphDependencyBuilderService graphDependencyBuilderService;
+        //private DependencyResolver dependencyResolver;
         private BulkSaveService bulkSaveService;
         private DbContext context;
 
         public InitializerService(DbContext context)
         {
             this._graph = new Graph();
-            this.graphDependencyBuilderService = new GraphDependencyBuilderService(Graph, context);
-            this.dependencyResolver = new DependencyResolver(Graph);
-            this.bulkSaveService = new BulkSaveService(dependencyResolver.ExecutionOrder, graphDependencyBuilderService.ContextPrimaryKeys, context);
+            //this.graphDependencyBuilderService = new GraphDependencyBuilderService(Graph, context);
+            //this.dependencyResolver = new DependencyResolver(Graph);
+            //this.bulkSaveService = new BulkSaveService(dependencyResolver.ExecutionOrder, graphDependencyBuilderService.ContextPrimaryKeys, context);
         }
 
         public BulkSaveService GetBulkSaveService()
@@ -46,7 +46,8 @@ namespace DbContextSaveChangesResolver.Services
 
         public string PrintDependencyOrder()
         {
-            return string.Join(", ",  dependencyResolver.ExecutionOrder);
+            return "";
+            //return string.Join(", ",  dependencyResolver.ExecutionOrder);
         }
     }
 }

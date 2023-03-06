@@ -5,6 +5,7 @@ using DbFirstTestProject.DataLayer.Entities;
 using Microsoft.Data.Sqlite;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Conventions;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Reflection;
@@ -277,5 +278,15 @@ namespace SaveChangesResolverTest
             context.SaveChanges();
             context.ChangeTracker.Clear();
         }
+
+        [Test]
+        public void MatrixDependencyResolverTest()
+        {
+            MatrixDependencyResolver matrix = new MatrixDependencyResolver(context);
+            Console.WriteLine(string.Join(", ", matrix.GetDependencyOrder().Select(x => x.Name)));
+            Console.WriteLine();
+            Console.WriteLine(matrix.PrintMatrix());
+            Console.WriteLine(matrix.PrintMatrixRelationship());
+        } 
     }
 }
